@@ -4,7 +4,7 @@
 
 ```
 wget http://cs231n.stanford.edu/tiny-imagenet-200.zip
-unzip tiny-imagenet-200
+unzip tiny-imagenet-200.zip
 ```
 
 #### Run julia:
