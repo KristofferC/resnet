@@ -1,7 +1,11 @@
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
-ColorTypes = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
+CUDAdrv = "c5f51814-7f29-56b8-a69c-e4d8f6be1fde"
+CUDAnative = "be33ccc6-a3ff-5ff2-a52e-74243cff1e17"
 CuArrays = "3a865a2d-5b23-5a0f-bc46-62713ec82fae"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
 Metalhead = "dbeba491-748d-5e0e-a39e-b530a07fa0cc"
+NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
+TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"

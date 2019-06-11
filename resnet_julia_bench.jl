@@ -1,11 +1,11 @@
 import Pkg
 Pkg.activate(@__DIR__)
-
 using Metalhead
 using CSV
 using DataFrames
 using Flux
 using CuArrays
+using TimerOutputs
 
 using Random
 using Printf
@@ -15,7 +15,7 @@ const CATEGORIES = sort(readdir("$DATASET_PATH/train"))
 
 const MODEL_GPU = Metalhead.resnet50();
 
-# We are only using 200 categories for this experiment so swap out the last FC layer
+# We are only using 200 categories for this data set so swap out the last FC layer
 const MODEL_GPU_200 = Chain(
     ntuple(i -> (i != (length(MODEL_GPU.layers)-1) ? MODEL_GPU.layers[i] : Dense(2048, length(CATEGORIES))), length(MODEL_GPU.layers))...
 ) |> gpu
@@ -71,17 +71,18 @@ function loss(x, y)
     Flux.crossentropy(MODEL_GPU_200(x), y)
 end
 
-accuracy(x, y) = mean(Flux.onecold(MODEL_GPU(x)) .== Flux.onecold(y))
 
-
+# accuracy(x, y) = mean(Flux.onecold(MODEL_GPU(x)) .== Flux.onecold(y))
 
 opt = ADAM()
 
-BATCH_SIZE = 16
-# N_BATCHES = length(TRAIN_DATA) ÷ BATCH_SIZE
-N_BATCHES = 30
+BATCH_SIZE = 16 # higher OOMs
+N_BATCHES = length(TRAIN_DATA) ÷ BATCH_SIZE
+N_BATCHES = 32
 
 # Async feed data to GPU
+
+#=
 c = Channel(6)
 @async begin
     for i in 1:N_BATCHES
@@ -89,19 +90,36 @@ c = Channel(6)
     end
     close(c)
 end
+=#
+
+
+#c = (gpu(prepare_batch(TRAIN_DATA, i, BATCH_SIZE)) for i in 1:N_BATCHES)
+c = [gpu(prepare_batch(TRAIN_DATA, i, BATCH_SIZE)) for i in 1:N_BATCHES]
 
 N_EPOCHS = 1
 
-for epoch in 1:N_EPOCHS
+
+begin
+#TimerOutputs.reset_timer!()
+    x, y = gpu(prepare_batch(TRAIN_DATA, 1, BATCH_SIZE))
+    loss(x, y)
+#TimerOutputs.print_timer()
+end
+
+
+
+for epoch in 1:1
     prev_time = time()
     for (i, (x, y)) in enumerate(c)
-
-      l = loss(x, y)
-      Flux.back!(l)
-      Flux.Optimise._update_params!(opt, Flux.params(MODEL_GPU_200))
-      t = time()
-      Δt = t - prev_time
-      @printf "Epoch: %d, Batch %d / %d, %4.2f Images / sec \n" epoch i N_BATCHES size(x, 4) / Δt
-      prev_time = t
+        @show i
+        @timeit "loss" l = loss(x, y)
+        @timeit "back" Flux.back!(l)
+        @timeit "update params" Flux.Optimise._update_params!(opt, Flux.params(MODEL_GPU_200))
+        t = time()
+        Δt = t - prev_time
+        @printf "Epoch: %d, Batch %d / %d, %4.2f Images / sec \n" epoch i N_BATCHES size(x, 4) / Δt
+        prev_time = t
     end
 end
+TimerOutputs.print_timer()
+println()
